@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "tippytap",
+  "version": "${version}",
+  "name": "tippytap",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/tippytap/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-datagen": [
+      "io.github.thebrightmountain.tippytap.client.TippytapDataGenerator"
+    ],
+    "client": [
+      "io.github.thebrightmountain.tippytap.client.TippytapClient"
+    ],
+    "main": [
+      "io.github.thebrightmountain.tippytap.Tippytap"
+    ]
+  },
+  "mixins": [
+    "tippytap.mixins.json",
+    {
+      "config": "tippytap.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
