@@ -75,7 +75,22 @@ public class TippytapConfig {
 
     // ── Keystroke overlay ─────────────────────────────────────────────────────
 
-    public boolean showKeystrokes = true;
+    public boolean showKeystrokes    = true;
+    public boolean showKeystrokePri  = false;
+    public boolean showKeystrokeSec  = false;
+
+    // ── Status bars (health / food / XP) ─────────────────────────────────────
+    // Three stacked gradient bars replacing the vanilla hearts, hunger icons,
+    // and XP bar. Color: green (>60 %) → orange (>30 %) → red (≤30 %).
+    // XP bar always uses the classic green and shows a tiny level number.
+    // Default position is bottom_left to mirror where vanilla puts these bars.
+
+    public boolean showLocatorBar     = true;
+    public boolean showHealthBar      = true;
+    public boolean showFoodBar        = true;
+    public boolean showXpBar          = true;
+    public String  statusBarsPosition = "bottom_left";
+    public int     statusBarsWidth    = 112;
 
     // ── Positions ─────────────────────────────────────────────────────────────
     // "top_left" | "top_right" | "bottom_left" | "bottom_right"
@@ -88,6 +103,20 @@ public class TippytapConfig {
     public int infoPanelWidth = 112;  // info panel width in pixels
     public int keystrokeKeySize = 18;   // directional key tile size in pixels
     public int keystrokeActionHeight = 12;   // height of SNEAK / JUMP / PRI / SEC keys
+
+    // ── Visibility when the F3 debug overlay is active ────────────────────────
+    // When true the info panel is hidden while F3 is held (other components always show).
+
+    public boolean hideInfoPanelInDebug = true;
+
+    // ── Custom hotbar ─────────────────────────────────────────────────────────
+
+    public boolean showCustomHotbar = true;
+    public boolean showArmorBar     = true;
+    public int hotbarSlotSize = 20;   // px per slot (vanilla = 20)
+    public int hotbarGap = 1;         // px between slots
+    public int hotbarOffsetY = 6;     // px gap from screen bottom
+
 
     // ── Persistence ───────────────────────────────────────────────────────────
 

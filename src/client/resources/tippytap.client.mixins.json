@@ -5,6 +5,10 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "ClientPacketListenerMixin",
+    "ExperienceBarRendererMixin",
+    "GuiMixin",
+    "LocatorBarRendererMixin",
+    "InventoryAccessor",
     "PlayerInvoker"
   ],
   "injectors": {
