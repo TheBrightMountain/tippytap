@@ -7,7 +7,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.NonNull;
 
 public class HudRenderer implements HudElement {
@@ -27,6 +26,25 @@ public class HudRenderer implements HudElement {
     private long lastFpsTime = System.nanoTime();
     private int frameCount = 0;
     private int currentFps = 0;
+
+    // Speed tracking — updated each game tick from actual position delta
+    private volatile double tickSpeed = 0;
+    private double prevTickX = 0, prevTickY = 0, prevTickZ = 0;
+    private boolean hasPrevTickPos = false;
+
+    /** Called every game tick to record the player's position and compute speed. */
+    public void onGameTick(double x, double y, double z) {
+        if (hasPrevTickPos) {
+            double dx = x - prevTickX;
+            double dy = y - prevTickY;
+            double dz = z - prevTickZ;
+            tickSpeed = Math.sqrt(dx * dx + dy * dy + dz * dz) * 20.0;
+        }
+        prevTickX = x;
+        prevTickY = y;
+        prevTickZ = z;
+        hasPrevTickPos = true;
+    }
 
     // Key tile gap (fixed; size comes from config)
     private static final int KEY_GAP = 2;
@@ -209,8 +227,7 @@ public class HudRenderer implements HudElement {
             double x = client.player.getX();
             double y = client.player.getY();
             double z = client.player.getZ();
-            Vec3 vel = client.player.getDeltaMovement();
-            double hSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z) * 20.0;
+            double hSpeed = tickSpeed;
             float yaw = client.player.getYRot();
             float pitch = client.player.getXRot();
             boolean sprinting = client.player.isSprinting();

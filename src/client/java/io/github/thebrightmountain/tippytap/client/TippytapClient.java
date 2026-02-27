@@ -2,6 +2,7 @@ package io.github.thebrightmountain.tippytap.client;
 
 import io.github.thebrightmountain.tippytap.mixin.client.PlayerInvoker;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.resources.Identifier;
@@ -20,6 +21,12 @@ public class TippytapClient implements ClientModInitializer {
                 Identifier.fromNamespaceAndPath("tippytap", "hud"),
                 hud
         );
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player != null) {
+                hud.onGameTick(client.player.getX(), client.player.getY(), client.player.getZ());
+            }
+        });
 
         AttackEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
             if (level.isClientSide()) {
