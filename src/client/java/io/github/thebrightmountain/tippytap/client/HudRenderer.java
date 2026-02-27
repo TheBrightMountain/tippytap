@@ -69,19 +69,18 @@ public class HudRenderer implements HudElement {
     private static final int C_KEY_LABEL_SEL  = 0xFFFFFFFF;
     private static final int C_KEY_LABEL_IDLE = 0xFF888888;
 
-    // Status bars — shared gradient: green (>60 %) → orange (>30 %) → red (≤30 %)
+    // Status bars
     private static final int C_BAR_TRACK      = 0x80333333;
-    private static final int C_GRAD_HI        = 0xCC55DD55;
-    private static final int C_GRAD_MID       = 0xCCFF8800;
-    private static final int C_GRAD_LO        = 0xCCFF4444;
-    private static final int C_BAR_XP         = 0xCC55FF55;
+    private static final int C_GRAD_HI        = 0xCC448844;  // health — muted green
+    private static final int C_GRAD_MID       = 0xCCBB6622;  // health — muted orange
+    private static final int C_GRAD_LO        = 0xCCBB3333;  // health — muted red
+    private static final int C_BAR_XP         = 0xCC336633;  // XP — muted green
+    private static final int C_BAR_FOOD       = 0xCCAA6622;  // food — warm brown
+    private static final int C_BAR_SAT        = 0xCC997722;  // saturation — muted gold
     private static final int C_XP_LEVEL_TXT   = 0xFFCCCCCC;
 
     // Locator bar
     private static final int C_LOCATOR_TICK   = 0x40FFFFFF;
-
-    // Saturation bar
-    private static final int C_BAR_SAT        = 0x80FFCC33;
 
     // Combat event text colors
     private static final int C_HIT_RANGE      = 0xFF55DDFF;
@@ -353,7 +352,7 @@ public class HudRenderer implements HudElement {
         int hbGap  = config.hotbarGap;
         int totalW = 9 * sz + 8 * hbGap;
         int ox     = (sw - totalW) / 2;
-        int barH   = 5, padX = 4, padV = 2;
+        int barH   = 4, padX = 4, padV = 2;
         int rowH   = barH + padV * 2;
         int rowGap = 1;
         int base   = sh - config.hotbarOffsetY - sz - 2;  // top of hotbar outer bg
@@ -374,8 +373,7 @@ public class HudRenderer implements HudElement {
         if (config.showFoodBar) {
             int foodX = ox + colW + colGap;
             float pct = client.player.getFoodData().getFoodLevel() / 20f;
-            int color = pct > 0.6f ? C_GRAD_HI : (pct > 0.3f ? C_GRAD_MID : C_GRAD_LO);
-            drawFillBar(gfx, foodX + padX, row3Y + padV, colW - padX * 2, barH, pct, color);
+            drawFillBar(gfx, foodX + padX, row3Y + padV, colW - padX * 2, barH, pct, C_BAR_FOOD);
             drawCenteredLabel(gfx, client, foodX, row3Y, colW, rowH,
                               String.valueOf(client.player.getFoodData().getFoodLevel()), C_TEXT_INFO);
 
@@ -417,7 +415,7 @@ public class HudRenderer implements HudElement {
         int hbGap   = config.hotbarGap;
         int totalW  = 9 * sz + 8 * hbGap;
         int ox      = (sw - totalW) / 2;
-        int barH    = 5, padV = 2, rowH = barH + padV * 2, rowGap = 1;
+        int barH    = 4, padV = 2, rowH = barH + padV * 2, rowGap = 1;
         int base    = sh - config.hotbarOffsetY - sz - 2;
         int row3Y   = base - rowGap - rowH;
         int row2Y   = row3Y - rowGap - rowH;
