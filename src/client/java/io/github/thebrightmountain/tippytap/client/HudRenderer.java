@@ -73,7 +73,7 @@ public class HudRenderer implements HudElement {
     // Colors
     private static final int COLOR_BG_PANEL = 0x80000000;
     private static final int COLOR_KEY_ACTIVE = 0xCCFFFFFF;
-    private static final int COLOR_KEY_IDLE = 0x80222222;
+    private static final int COLOR_KEY_IDLE = 0x80000000;
     private static final int COLOR_KEY_HIT = 0xCCFF8800; // orange hit flash
     private static final int COLOR_KEY_CRIT = 0xCCFFDD00; // gold crit flash
     private static final int COLOR_KEY_SPRINT = 0xCC44FF44; // green sprint
@@ -361,21 +361,21 @@ public class HudRenderer implements HudElement {
         drawKeyFwd(gfx, client, col1, row0, ks, ks, "△", kUp, sprinting);
 
         // Row 1: [A] [S] [D]
-        drawKey(gfx, client, col0, row1, ks, ks, "◁", kLeft);
-        drawKey(gfx, client, col1, row1, ks, ks, "▽", kDown);
-        drawKey(gfx, client, col2, row1, ks, ks, "▷", kRight);
+        drawKey(gfx, client, col0, row1, ks, ks, "◁", kLeft, 0.5f);
+        drawKey(gfx, client, col1, row1, ks, ks, "▽", kDown, 0.5f);
+        drawKey(gfx, client, col2, row1, ks, ks, "▷", kRight, 0.5f);
 
         int halfW = (totalW - KEY_GAP) / 2;
 
         // Row 2: [Crouch] [Jump]
-        drawKey(gfx, client, col0, row2, halfW, ah, "SNEAK", kSneak);
-        drawKey(gfx, client, col0 + halfW + KEY_GAP, row2, halfW, ah, "JUMP", kJump);
+        drawKey(gfx, client, col0, row2, halfW, ah, "SNEAK", kSneak, 0.5f);
+        drawKey(gfx, client, col0 + halfW + KEY_GAP, row2, halfW, ah, "JUMP", kJump, 0.5f);
 
         // Row 3: [Pri] [Sec]
         boolean hitting = System.nanoTime() < hitFlashUntil;
         boolean wasCrit = hitting && lastHitWasCrit;
-        drawKeyPri(gfx, client, col0, row3, halfW, ah, "PRI", kPrimary, hitting, wasCrit);
-        drawKey(gfx, client, col0 + halfW + KEY_GAP, row3, halfW, ah, "SEC", kSecondary);
+        drawKeyPri(gfx, client, col0, row3, halfW, ah, "PRI", kPrimary, hitting, wasCrit, 0.5f);
+        drawKey(gfx, client, col0 + halfW + KEY_GAP, row3, halfW, ah, "SEC", kSecondary, 0.5f);
     }
 
     // -------------------------------------------------------------------------
@@ -383,7 +383,7 @@ public class HudRenderer implements HudElement {
     // -------------------------------------------------------------------------
 
     private void drawKey(GuiGraphics gfx, Minecraft client,
-                         int x, int y, int w, int h, String label, boolean active) {
+                         int x, int y, int w, int h, String label, boolean active, float textScale) {
         // Background
         gfx.fill(x, y, x + w, y + h, active ? COLOR_KEY_ACTIVE : COLOR_KEY_IDLE);
 
@@ -396,10 +396,7 @@ public class HudRenderer implements HudElement {
 
         // Centered label (no drop shadow so active state text stays crisp on white)
         int textColor = active ? COLOR_TEXT_ACTIVE : COLOR_TEXT_IDLE;
-        int tw = client.font.width(label);
-        int tx = x + (w - tw) / 2;
-        int ty = y + (h - 8) / 2;
-        gfx.drawString(client.font, label, tx, ty, textColor, false);
+        drawCenteredLabel(gfx, client, x, y, w, h, label, textColor, textScale);
     }
 
     /**
@@ -417,15 +414,15 @@ public class HudRenderer implements HudElement {
         gfx.fill(x, y, x + 1, y + h, border);
         gfx.fill(x + w - 1, y, x + w, y + h, border);
 
-        int tw = client.font.width(label);
-        gfx.drawString(client.font, label, x + (w - tw) / 2, y + (h - 8) / 2, text, false);
+        drawCenteredLabel(gfx, client, x, y, w, h, label, text, 0.5f);
     }
 
     /**
      * Like drawKey but with hit-flash and crit states that override active colors.
      */
     private void drawKeyPri(GuiGraphics gfx, Minecraft client,
-                            int x, int y, int w, int h, String label, boolean active, boolean hit, boolean crit) {
+                            int x, int y, int w, int h, String label, boolean active, boolean hit, boolean crit,
+                            float textScale) {
         int bg = crit ? COLOR_KEY_CRIT : (hit ? COLOR_KEY_HIT : (active ? COLOR_KEY_ACTIVE : COLOR_KEY_IDLE));
         int border = crit ? COLOR_BORDER_CRIT : (hit ? COLOR_BORDER_HIT : (active ? COLOR_BORDER_ACTIVE : COLOR_BORDER_IDLE));
         int text = crit ? COLOR_TEXT_CRIT : (hit ? COLOR_TEXT_HIT : (active ? COLOR_TEXT_ACTIVE : COLOR_TEXT_IDLE));
@@ -436,8 +433,20 @@ public class HudRenderer implements HudElement {
         gfx.fill(x, y, x + 1, y + h, border);
         gfx.fill(x + w - 1, y, x + w, y + h, border);
 
-        int tw = client.font.width(label);
-        gfx.drawString(client.font, label, x + (w - tw) / 2, y + (h - 8) / 2, text, false);
+        drawCenteredLabel(gfx, client, x, y, w, h, label, text, textScale);
+    }
+
+    private void drawCenteredLabel(GuiGraphics gfx, Minecraft client,
+                                   int x, int y, int w, int h, String label, int color, float scale) {
+        float scaledW = client.font.width(label) * scale;
+        float scaledH = 8 * scale;
+        float tx = x + (w - scaledW) / 2f;
+        float ty = y + (h - scaledH) / 2f;
+        gfx.pose().pushMatrix();
+        gfx.pose().translate(tx, ty);
+        gfx.pose().scale(scale, scale);
+        gfx.drawString(client.font, label, 0, 0, color, false);
+        gfx.pose().popMatrix();
     }
 
     // -------------------------------------------------------------------------
