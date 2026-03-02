@@ -11,6 +11,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.waypoints.PartialTickSupplier;
 import net.minecraft.world.waypoints.TrackedWaypoint;
@@ -35,6 +36,15 @@ public class HudRenderer implements HudElement {
     private static final int    KEY_GAP       = 2;
     private static final int    LOCATOR_H     = 5;
     private static final double LOCATOR_FOV   = 60.0;
+    private static final int    BG_PAD        = 2;   // outer padding on panel background fills
+    private static final int    OFFHAND_GAP   = 12;  // px gap between main hotbar edge and offhand/armor slots
+    private static final int    ITEM_SIZE     = 16;  // standard Minecraft item icon size
+
+    // Circular status rings
+    private static final int RING_R       = 9;  // outer radius
+    private static final int RING_R_IN    = 7;  // inner radius (ring is 2 px wide)
+    private static final int RING_GAP     = 5;  // gap between rings
+    private static final int RING_PAD     = 4;  // padding inside ring panel background
 
     // Shared
     private static final int C_BG_PANEL       = 0x40000000;
@@ -71,12 +81,12 @@ public class HudRenderer implements HudElement {
 
     // Status bars
     private static final int C_BAR_TRACK      = 0x80333333;
-    private static final int C_GRAD_HI        = 0xCC448844;  // health — muted green
-    private static final int C_GRAD_MID       = 0xCCBB6622;  // health — muted orange
-    private static final int C_GRAD_LO        = 0xCCBB3333;  // health — muted red
-    private static final int C_BAR_XP         = 0xCC336633;  // XP — muted green
-    private static final int C_BAR_FOOD       = 0xCCAA6622;  // food — warm brown
-    private static final int C_BAR_SAT        = 0xCC997722;  // saturation — muted gold
+    private static final int C_GRAD_HI        = 0xCC44BB44;  // health — green
+    private static final int C_GRAD_MID       = 0xCCDD8822;  // health — orange
+    private static final int C_GRAD_LO        = 0xCCDD3333;  // health — red
+    private static final int C_BAR_XP         = 0xCC33AA33;  // XP — green
+    private static final int C_BAR_FOOD       = 0xCCCC8822;  // food — warm orange
+    private static final int C_BAR_SAT        = 0xCCBBAA33;  // saturation — gold
     private static final int C_XP_LEVEL_TXT   = 0xFFCCCCCC;
 
     // Locator bar
@@ -193,6 +203,7 @@ public class HudRenderer implements HudElement {
         if (!inDebug || !config.hideInfoPanelInDebug)
             renderInfoPanel(gfx, client, inContainer);
         renderStatusBars(gfx, client, inContainer);
+        renderSecondaryStats(gfx, client, inContainer);
         renderLocatorBar(gfx, client, delta, inContainer);
         renderCustomHotbar(gfx, client, inContainer);
         renderKeystrokes(gfx, client, inContainer);
@@ -346,56 +357,136 @@ public class HudRenderer implements HudElement {
     // =========================================================================
 
     private void renderStatusBars(GuiGraphics gfx, Minecraft client, boolean dimmed) {
+        if (!config.showHealthBar) return;
         int sw = client.getWindow().getGuiScaledWidth();
         int sh = client.getWindow().getGuiScaledHeight();
         int sz     = config.hotbarSlotSize;
         int hbGap  = config.hotbarGap;
         int totalW = 9 * sz + 8 * hbGap;
         int ox     = (sw - totalW) / 2;
-        int barH   = 4, padX = 4, padV = 2;
-        int rowH   = barH + padV * 2;
+        int barH   = 6, padX = 4, padV = 3;
+        int rowH   = barH + padV * 2;  // 12
         int rowGap = 1;
-        int base   = sh - config.hotbarOffsetY - sz - 2;  // top of hotbar outer bg
-
-        // ── Row: XP | Food | Saturation ──────────────────────────────────────
-        int row3Y  = base - rowGap - rowH;
-        int colGap = 4;
-        int colW   = (totalW - 2 * colGap) / 3;
-        gfx.fill(ox, row3Y, ox + totalW, row3Y + rowH, C_BG_PANEL);
-
-        if (config.showXpBar) {
-            drawFillBar(gfx, ox + padX, row3Y + padV, colW - padX * 2, barH,
-                        client.player.experienceProgress, C_BAR_XP);
-            drawCenteredLabel(gfx, client, ox, row3Y, colW, rowH,
-                              String.valueOf(client.player.experienceLevel), C_XP_LEVEL_TXT);
-        }
-
-        if (config.showFoodBar) {
-            int foodX = ox + colW + colGap;
-            float pct = client.player.getFoodData().getFoodLevel() / 20f;
-            drawFillBar(gfx, foodX + padX, row3Y + padV, colW - padX * 2, barH, pct, C_BAR_FOOD);
-            drawCenteredLabel(gfx, client, foodX, row3Y, colW, rowH,
-                              String.valueOf(client.player.getFoodData().getFoodLevel()), C_TEXT_INFO);
-
-            int satX = ox + (colW + colGap) * 2;
-            float sat = client.player.getFoodData().getSaturationLevel();
-            drawFillBar(gfx, satX + padX, row3Y + padV, colW - padX * 2, barH,
-                        Math.min(1f, sat / 20f), C_BAR_SAT);
-            drawCenteredLabel(gfx, client, satX, row3Y, colW, rowH,
-                              String.format("%.0f", sat), C_TEXT_INFO);
-        }
-
-        if (dimmed) gfx.fill(ox, row3Y, ox + totalW, row3Y + rowH, C_DIM);
+        int base   = sh - config.hotbarOffsetY - sz - BG_PAD;
 
         // ── Row: Health ───────────────────────────────────────────────────────
-        if (config.showHealthBar) {
-            int row2Y = row3Y - rowGap - rowH;
-            gfx.fill(ox, row2Y, ox + totalW, row2Y + rowH, C_BG_PANEL);
-            float h = client.player.getHealth(), mh = client.player.getMaxHealth();
-            float pct = mh > 0 ? h / mh : 0f;
-            int color = pct > 0.6f ? C_GRAD_HI : (pct > 0.3f ? C_GRAD_MID : C_GRAD_LO);
-            drawFillBar(gfx, ox + padX, row2Y + padV, totalW - padX * 2, barH, pct, color);
-            if (dimmed) gfx.fill(ox, row2Y, ox + totalW, row2Y + rowH, C_DIM);
+        int rowY = base - rowGap - rowH;
+        gfx.fill(ox, rowY, ox + totalW, rowY + rowH, C_BG_PANEL);
+        float h = client.player.getHealth(), mh = client.player.getMaxHealth();
+        float pct = mh > 0 ? h / mh : 0f;
+        int color = pct > 0.6f ? C_GRAD_HI : (pct > 0.3f ? C_GRAD_MID : C_GRAD_LO);
+        drawFillBar(gfx, ox + padX, rowY + padV, totalW - padX * 2, barH, pct, color);
+        drawCenteredLabel(gfx, client, ox, rowY, totalW, rowH,
+                          String.format("%.1f / %.0f", h, mh), C_TEXT_INFO);
+        if (dimmed) gfx.fill(ox, rowY, ox + totalW, rowY + rowH, C_DIM);
+    }
+
+    // =========================================================================
+    // Secondary stats (XP / Food / Saturation) — bottom-left corner widget
+    // =========================================================================
+
+    private static final ItemStack FOOD_ICON = new ItemStack(Items.BREAD);
+
+    private void renderSecondaryStats(GuiGraphics gfx, Minecraft client, boolean dimmed) {
+        boolean showXp   = config.showXpBar;
+        boolean showFood = config.showFoodBar;
+        if (!showXp && !showFood) return;
+
+        int sw = client.getWindow().getGuiScaledWidth();
+        int sh = client.getWindow().getGuiScaledHeight();
+
+        int sz     = config.hotbarSlotSize;
+        int hbGap  = config.hotbarGap;
+        int totalW = 9 * sz + 8 * hbGap;
+        int hotbarOx = (sw - totalW) / 2;
+
+        int diam = RING_R * 2 + 1;
+
+        int count = (showXp ? 1 : 0) + (showFood ? 1 : 0);  // food+sat merged = 1 circle
+
+        int panelW = RING_PAD * 2 + count * diam + (count - 1) * RING_GAP;
+        int panelH = RING_PAD * 2 + diam;
+
+        // Left of offhand slot, bottom-aligned with the hotbar background
+        int hotbarBottom = sh - config.hotbarOffsetY + BG_PAD;
+        int ox = hotbarOx - OFFHAND_GAP - sz - OFFHAND_GAP - panelW;
+        int oy = hotbarBottom - panelH;
+
+        gfx.fill(ox, oy, ox + panelW, oy + panelH, C_BG_PANEL);
+
+        int cx = ox + RING_PAD + RING_R;
+        int cy = oy + RING_PAD + RING_R;
+
+        if (showXp) {
+            drawCircularBar(gfx, cx, cy, RING_R, RING_R_IN, client.player.experienceProgress, C_BAR_XP);
+            drawCenteredLabel(gfx, client, cx - RING_R_IN, cy - RING_R_IN, RING_R_IN * 2, RING_R_IN * 2,
+                              String.valueOf(client.player.experienceLevel), C_XP_LEVEL_TXT);
+            cx += diam + RING_GAP;
+        }
+
+        if (showFood) {
+            float foodPct = client.player.getFoodData().getFoodLevel() / 20f;
+            float satPct  = Math.min(foodPct, client.player.getFoodData().getSaturationLevel() / 20f);
+            drawMergedCircularBar(gfx, cx, cy, RING_R, RING_R_IN, foodPct, C_BAR_FOOD, satPct, C_BAR_SAT);
+            float s = 0.55f;
+            gfx.pose().pushMatrix();
+            gfx.pose().translate(cx - 8 * s, cy - 8 * s);
+            gfx.pose().scale(s, s);
+            gfx.renderItem(FOOD_ICON, 0, 0);
+            gfx.pose().popMatrix();
+        }
+
+        if (dimmed) gfx.fill(ox, oy, ox + panelW, oy + panelH, C_DIM);
+    }
+
+    /** Draws an anti-aliased circular arc progress bar. Starts at top, fills clockwise. */
+    private static void drawCircularBar(GuiGraphics gfx, int cx, int cy, int outerR, int innerR, float progress, int fillColor) {
+        double twoPi  = Math.PI * 2;
+        double halfPi = Math.PI / 2;
+        float  pct    = Math.max(0f, Math.min(1f, progress));
+        for (int dy = -(outerR + 1); dy <= outerR + 1; dy++) {
+            for (int dx = -(outerR + 1); dx <= outerR + 1; dx++) {
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                float a = Math.min(
+                        (float)(dist - (innerR - 0.5)),
+                        (float)(outerR + 0.5 - dist));
+                a = Math.max(0f, Math.min(1f, a));
+                if (a <= 0) continue;
+                double norm   = (Math.atan2(dy, dx) + halfPi + twoPi) % twoPi / twoPi;
+                int baseColor = norm <= pct ? fillColor : C_BAR_TRACK;
+                int srcA      = (baseColor >>> 24) & 0xFF;
+                int color     = (baseColor & 0x00FFFFFF) | ((int)(srcA * a) << 24);
+                gfx.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, color);
+            }
+        }
+    }
+
+    /**
+     * Two-color arc in one pass: {@code secPct} (saturation) overlaid on
+     * {@code priPct} (food), dark track for the rest.
+     */
+    private static void drawMergedCircularBar(GuiGraphics gfx, int cx, int cy,
+                                              int outerR, int innerR,
+                                              float priPct, int priColor,
+                                              float secPct, int secColor) {
+        double twoPi  = Math.PI * 2;
+        double halfPi = Math.PI / 2;
+        float pri = Math.max(0f, Math.min(1f, priPct));
+        float sec = Math.max(0f, Math.min(pri, secPct));
+        for (int dy = -(outerR + 1); dy <= outerR + 1; dy++) {
+            for (int dx = -(outerR + 1); dx <= outerR + 1; dx++) {
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                float a = Math.min(
+                        (float)(dist - (innerR - 0.5)),
+                        (float)(outerR + 0.5 - dist));
+                a = Math.max(0f, Math.min(1f, a));
+                if (a <= 0) continue;
+                double norm   = (Math.atan2(dy, dx) + halfPi + twoPi) % twoPi / twoPi;
+                int baseColor = norm <= sec ? secColor : (norm <= pri ? priColor : C_BAR_TRACK);
+                int srcA      = (baseColor >>> 24) & 0xFF;
+                int color     = (baseColor & 0x00FFFFFF) | ((int)(srcA * a) << 24);
+                gfx.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, color);
+            }
         }
     }
 
@@ -415,13 +506,12 @@ public class HudRenderer implements HudElement {
         int hbGap   = config.hotbarGap;
         int totalW  = 9 * sz + 8 * hbGap;
         int ox      = (sw - totalW) / 2;
-        int barH    = 4, padV = 2, rowH = barH + padV * 2, rowGap = 1;
-        int base    = sh - config.hotbarOffsetY - sz - 2;
-        int row3Y   = base - rowGap - rowH;
-        int row2Y   = row3Y - rowGap - rowH;
-        int locRowH = LOCATOR_H + padV * 2;
-        int locRowY = row2Y - rowGap - locRowH;
-        int oy      = locRowY + padV;
+        int barH       = 6, padV = 3, rowH = barH + padV * 2, rowGap = 1;
+        int base       = sh - config.hotbarOffsetY - sz - BG_PAD;
+        int healthRowY = base - rowGap - rowH;
+        int locRowH    = LOCATOR_H + padV * 2;
+        int locRowY    = healthRowY - rowGap - locRowH;
+        int oy         = locRowY + padV;
 
         gfx.fill(ox, locRowY, ox + totalW, locRowY + locRowH, C_BG_PANEL);
 
@@ -473,7 +563,7 @@ public class HudRenderer implements HudElement {
         int oy = sh - config.hotbarOffsetY - sz;
 
         // Main hotbar background + slots
-        gfx.fill(ox - 2, oy - 2, ox + totalW + 2, oy + sz + 2, C_BG_PANEL);
+        gfx.fill(ox - BG_PAD, oy - BG_PAD, ox + totalW + BG_PAD, oy + sz + BG_PAD, C_BG_PANEL);
 
         int selected = ((InventoryAccessor) client.player.getInventory()).getSelected();
 
@@ -486,7 +576,7 @@ public class HudRenderer implements HudElement {
 
             ItemStack stack = client.player.getInventory().getItem(i);
             if (!stack.isEmpty()) {
-                int ix = x + (sz - 16) / 2, iy = oy + (sz - 16) / 2;
+                int ix = x + (sz - ITEM_SIZE) / 2, iy = oy + (sz - ITEM_SIZE) / 2;
                 gfx.renderItem(stack, ix, iy);
                 gfx.renderItemDecorations(client.font, stack, ix, iy);
             }
@@ -496,7 +586,7 @@ public class HudRenderer implements HudElement {
                     sel ? C_KEY_LABEL_SEL : C_KEY_LABEL_IDLE);
         }
 
-        if (dimmed) gfx.fill(ox - 2, oy - 2, ox + totalW + 2, oy + sz + 2, C_DIM);
+        if (dimmed) gfx.fill(ox - BG_PAD, oy - BG_PAD, ox + totalW + BG_PAD, oy + sz + BG_PAD, C_DIM);
 
         // Armor bar — right of main hotbar, only occupied pieces in order
         if (config.showArmorBar) {
@@ -507,32 +597,32 @@ public class HudRenderer implements HudElement {
                 if (!s.isEmpty()) worn.add(s);
             }
             if (!worn.isEmpty()) {
-                int armorX = ox + totalW + 12;
+                int armorX = ox + totalW + OFFHAND_GAP;
                 int armorW = worn.size() * sz + (worn.size() - 1) * gap;
-                gfx.fill(armorX - 2, oy - 2, armorX + armorW + 2, oy + sz + 2, C_BG_PANEL);
+                gfx.fill(armorX - BG_PAD, oy - BG_PAD, armorX + armorW + BG_PAD, oy + sz + BG_PAD, C_BG_PANEL);
                 for (int i = 0; i < worn.size(); i++) {
                     int x = armorX + i * (sz + gap);
                     gfx.fill(x, oy, x + sz, oy + sz, C_SLOT_IDLE_BG);
                     drawBorder(gfx, x, oy, sz, sz, C_SLOT_IDLE_BD);
-                    int ix = x + (sz - 16) / 2, iy = oy + (sz - 16) / 2;
+                    int ix = x + (sz - ITEM_SIZE) / 2, iy = oy + (sz - ITEM_SIZE) / 2;
                     gfx.renderItem(worn.get(i), ix, iy);
                     gfx.renderItemDecorations(client.font, worn.get(i), ix, iy);
                 }
-                if (dimmed) gfx.fill(armorX - 2, oy - 2, armorX + armorW + 2, oy + sz + 2, C_DIM);
+                if (dimmed) gfx.fill(armorX - BG_PAD, oy - BG_PAD, armorX + armorW + BG_PAD, oy + sz + BG_PAD, C_DIM);
             }
         }
 
         // Offhand slot — only shown when occupied
         ItemStack offhand = client.player.getOffhandItem();
         if (!offhand.isEmpty()) {
-            int offhandX = ox - 12 - sz;
-            gfx.fill(offhandX - 2, oy - 2, offhandX + sz + 2, oy + sz + 2, C_BG_PANEL);
+            int offhandX = ox - OFFHAND_GAP - sz;
+            gfx.fill(offhandX - BG_PAD, oy - BG_PAD, offhandX + sz + BG_PAD, oy + sz + BG_PAD, C_BG_PANEL);
             gfx.fill(offhandX, oy, offhandX + sz, oy + sz, C_SLOT_IDLE_BG);
             drawBorder(gfx, offhandX, oy, sz, sz, C_SLOT_IDLE_BD);
-            int ix = offhandX + (sz - 16) / 2, iy = oy + (sz - 16) / 2;
+            int ix = offhandX + (sz - ITEM_SIZE) / 2, iy = oy + (sz - ITEM_SIZE) / 2;
             gfx.renderItem(offhand, ix, iy);
             gfx.renderItemDecorations(client.font, offhand, ix, iy);
-            if (dimmed) gfx.fill(offhandX - 2, oy - 2, offhandX + sz + 2, oy + sz + 2, C_DIM);
+            if (dimmed) gfx.fill(offhandX - BG_PAD, oy - BG_PAD, offhandX + sz + BG_PAD, oy + sz + BG_PAD, C_DIM);
         }
     }
 
@@ -551,9 +641,9 @@ public class HudRenderer implements HudElement {
         int totalH = ks * 2 + ah + KEY_GAP * 2;
         String kpos = config.keystrokesPosition != null ? config.keystrokesPosition : "bottom_right";
         int bx = kpos.contains("right")  ? sw - totalW - MARGIN : MARGIN;
-        int by = kpos.contains("bottom") ? sh - totalH - MARGIN : MARGIN;
+        int by = kpos.contains("bottom") ? sh - config.hotbarOffsetY - totalH : MARGIN;
 
-        gfx.fill(bx - 2, by - 2, bx + totalW + 2, by + totalH + 2, C_BG_PANEL);
+        gfx.fill(bx - BG_PAD, by - BG_PAD, bx + totalW + BG_PAD, by + totalH + BG_PAD, C_BG_PANEL);
 
         int col1 = bx + ks + KEY_GAP;
         int col2 = bx + (ks + KEY_GAP) * 2;
@@ -576,7 +666,7 @@ public class HudRenderer implements HudElement {
         drawKey   (gfx, client, bx,   row2, halfW, ah, "SNEAK", client.options.keyShift.isDown());
         drawKey   (gfx, client, bx + halfW + KEY_GAP, row2, halfW, ah, "JUMP", client.options.keyJump.isDown());
 
-        if (dimmed) gfx.fill(bx - 2, by - 2, bx + totalW + 2, by + totalH + 2, C_DIM);
+        if (dimmed) gfx.fill(bx - BG_PAD, by - BG_PAD, bx + totalW + BG_PAD, by + totalH + BG_PAD, C_DIM);
     }
 
     // =========================================================================
@@ -627,11 +717,11 @@ public class HudRenderer implements HudElement {
         float scale   = 0.5f;
         float scaledW = client.font.width(label) * scale;
         float tx = x + (w - scaledW) / 2f;
-        float ty = y + (h - 4f * scale) / 2f;
+        float ty = y + (h - client.font.lineHeight * scale) / 2f;
         gfx.pose().pushMatrix();
         gfx.pose().translate(tx, ty);
         gfx.pose().scale(scale, scale);
-        gfx.drawString(client.font, label, 0, 0, color, false);
+        gfx.drawString(client.font, label, 0, 0, color, true);
         gfx.pose().popMatrix();
     }
 
@@ -640,7 +730,7 @@ public class HudRenderer implements HudElement {
         gfx.pose().pushMatrix();
         gfx.pose().translate(tx, ty);
         gfx.pose().scale(0.5f, 0.5f);
-        gfx.drawString(client.font, label, 0, 0, color, false);
+        gfx.drawString(client.font, label, 0, 0, color, true);
         gfx.pose().popMatrix();
     }
 
