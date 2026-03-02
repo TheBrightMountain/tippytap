@@ -25,7 +25,7 @@ public final class SecondaryStatsRenderer {
         int hotbarWidth  = 9 * slotSize + 8 * slotGap;
         int hotbarLeft   = (screenWidth - hotbarWidth) / 2;
 
-        int ringDiam  = HudConst.RING_R * 2 + 1;
+        int ringDiam  = HudConst.RING_R * 2;
         int ringCount = (showXp ? 1 : 0) + (showFood ? 1 : 0);  // food+sat share one ring
 
         int panelWidth  = HudConst.RING_PAD * 2 + ringCount * ringDiam + (ringCount - 1) * HudConst.RING_GAP;

@@ -32,8 +32,9 @@ public final class DrawUtils {
         float scale      = 0.5f;
         float textWidth  = client.font.width(text) * scale;
         float textHeight = client.font.lineHeight * scale;
-        float tx = x + (w - textWidth)  / 2f;
-        float ty = y + (h - textHeight) / 2f;
+        // Round to nearest pixel to prevent floor-truncation shifting the text up/left
+        float tx = Math.round(x + (w - textWidth)  / 2f);
+        float ty = Math.round(y + (h - textHeight) / 2f);
         gfx.pose().pushMatrix();
         gfx.pose().translate(tx, ty);
         gfx.pose().scale(scale, scale);

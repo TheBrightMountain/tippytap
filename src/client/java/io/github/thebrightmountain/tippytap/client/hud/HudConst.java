@@ -24,11 +24,11 @@ public final class HudConst {
     // ── Circular status rings ─────────────────────────────────────────────────
 
     /** Outer radius of a status ring (px). */
-    public static final int RING_R    = 9;
+    public static final int RING_R    = 10;
     /** Inner radius — ring thickness = RING_R − RING_R_IN = 2 px. */
-    public static final int RING_R_IN = 7;
+    public static final int RING_R_IN = 8;
     /** Gap between adjacent rings (px). */
-    public static final int RING_GAP  = 5;
+    public static final int RING_GAP  = 4;
     /** Padding inside the ring panel background (px). */
     public static final int RING_PAD  = 4;
 
@@ -69,12 +69,12 @@ public final class HudConst {
     // ── Status bars ───────────────────────────────────────────────────────────
 
     public static final int C_BAR_TRACK  = 0x80333333;
-    public static final int C_HEALTH_HI  = 0xCC44BB44;  // > 60 %
-    public static final int C_HEALTH_MID = 0xCCDD8822;  // > 30 %
-    public static final int C_HEALTH_LO  = 0xCCDD3333;  // ≤ 30 %
-    public static final int C_XP_FILL    = 0xCC33AA33;
-    public static final int C_FOOD_FILL  = 0xCCCC8822;
-    public static final int C_SAT_FILL   = 0xCCBBAA33;
+    public static final int C_HEALTH_HI  = 0xCC44EE44;  // > 60 %
+    public static final int C_HEALTH_MID = 0xCCFFAA00;  // > 30 %
+    public static final int C_HEALTH_LO  = 0xCCFF3333;  // ≤ 30 %
+    public static final int C_XP_FILL    = 0xCC33CC33;
+    public static final int C_FOOD_FILL  = 0xCCFF7700;
+    public static final int C_SAT_FILL   = 0xCCFFEE00;
     public static final int C_XP_LEVEL   = 0xFFCCCCCC;
 
     // ── Locator bar ───────────────────────────────────────────────────────────
