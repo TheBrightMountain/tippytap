@@ -60,6 +60,9 @@ public class HudRenderer implements HudElement {
     private volatile String receivedType       = null;
     private volatile long   damageTakenExpiry  = 0;
     private volatile float  damageTaken        = 0f;
+    private volatile long   damageTakenStart   = 0;
+
+    private static final long DMG_FLASH_NS = 600_000_000L; // 600 ms
 
     // =========================================================================
     // Public event API (called from mixins)
@@ -113,8 +116,10 @@ public class HudRenderer implements HudElement {
 
     /** Called when the local player's health decreases. */
     public void onDmgTaken(float amount) {
-        damageTakenExpiry = System.nanoTime() + 3_000_000_000L;
+        long now          = System.nanoTime();
+        damageTakenExpiry = now + 3_000_000_000L;
         damageTaken       = amount;
+        damageTakenStart  = now;
     }
 
     // =========================================================================
@@ -136,7 +141,10 @@ public class HudRenderer implements HudElement {
         if (!inDebug || !config.hideInfoPanelInDebug)
             InfoPanelRenderer.render(gfx, client, config, currentFps, tickSpeed, combat, inContainer);
 
-        StatusBarsRenderer.renderHealthBar(gfx, client, config, inContainer);
+        float dmgFlashT = damageTakenStart > 0
+                ? Math.min(1f, (float)(System.nanoTime() - damageTakenStart) / DMG_FLASH_NS)
+                : 1f;
+        StatusBarsRenderer.renderHealthBar(gfx, client, config, inContainer, dmgFlashT);
         SecondaryStatsRenderer.render(gfx, client, config, inContainer);
         StatusBarsRenderer.renderLocatorBar(gfx, client, config, delta, inContainer);
         HotbarRenderer.render(gfx, client, config, inContainer);
