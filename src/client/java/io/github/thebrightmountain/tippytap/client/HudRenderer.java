@@ -62,6 +62,7 @@ public class HudRenderer implements HudElement {
     private volatile float  damageTaken        = 0f;
     private volatile long   damageTakenStart   = 0;
     private volatile long   healFlashStart     = 0;
+    private volatile float  healAmount         = 0f;
 
     private static final long DMG_FLASH_NS  = 600_000_000L; // 600 ms
     private static final long HEAL_FLASH_NS = 600_000_000L;
@@ -127,6 +128,7 @@ public class HudRenderer implements HudElement {
     /** Called when the local player's health increases. */
     public void onHealReceived(float amount) {
         healFlashStart = System.nanoTime();
+        healAmount     = amount;
     }
 
     // =========================================================================
@@ -149,13 +151,23 @@ public class HudRenderer implements HudElement {
             InfoPanelRenderer.render(gfx, client, config, currentFps, tickSpeed, combat, inContainer);
 
         long nowNs = System.nanoTime();
-        float dmgFlashT  = damageTakenStart > 0
+        float dmgFlashT    = damageTakenStart > 0
                 ? Math.min(1f, (float)(nowNs - damageTakenStart) / DMG_FLASH_NS)
                 : 1f;
-        float healFlashT = healFlashStart > 0
+        float healFlashT   = healFlashStart > 0
                 ? Math.min(1f, (float)(nowNs - healFlashStart) / HEAL_FLASH_NS)
                 : 1f;
-        StatusBarsRenderer.renderHealthBar(gfx, client, config, inContainer, dmgFlashT, healFlashT);
+        float maxHealth     = client.player.getMaxHealth();
+        float fill          = maxHealth > 0 ? client.player.getHealth() / maxHealth : 0f;
+        float dmgIntensity  = maxHealth > 0 ? Math.min(1f, damageTaken / maxHealth) : 0f;
+        if (fill <= 0.25f) {
+            // Scale 0 at 25% HP → 0.6 bonus at 0% HP, so even small hits flash clearly
+            float lowBonus = (0.25f - fill) / 0.25f;
+            dmgIntensity = Math.min(1f, dmgIntensity + lowBonus * 0.6f);
+        }
+        float healIntensity = maxHealth > 0 ? Math.min(1f, healAmount   / maxHealth) : 0f;
+        StatusBarsRenderer.renderHealthBar(gfx, client, config, inContainer,
+                dmgFlashT, dmgIntensity, healFlashT, healIntensity);
         SecondaryStatsRenderer.render(gfx, client, config, inContainer);
         StatusBarsRenderer.renderLocatorBar(gfx, client, config, delta, inContainer);
         HotbarRenderer.render(gfx, client, config, inContainer);

@@ -11,11 +11,14 @@ public final class StatusBarsRenderer {
     private StatusBarsRenderer() {}
 
     /** Renders the gradient health bar above the hotbar.
-     *  @param dmgFlashT  0.0 = damage just taken (full red flash),   1.0 = no flash
-     *  @param healFlashT 0.0 = healing just received (full green flash), 1.0 = no flash */
+     *  @param dmgFlashT    0.0 = just taken, 1.0 = faded
+     *  @param dmgIntensity 0.0–1.0 scaled by damage amount
+     *  @param healFlashT   0.0 = just healed, 1.0 = faded
+     *  @param healIntensity 0.0–1.0 scaled by heal amount */
     public static void renderHealthBar(GuiGraphics gfx, Minecraft client,
                                         TippytapConfig config, boolean dimmed,
-                                        float dmgFlashT, float healFlashT) {
+                                        float dmgFlashT, float dmgIntensity,
+                                        float healFlashT, float healIntensity) {
         if (!config.showHealthBar) return;
 
         int screenWidth  = client.getWindow().getGuiScaledWidth();
@@ -46,12 +49,12 @@ public final class StatusBarsRenderer {
                                     String.format("%.1f / %.0f", health, maxHealth),
                                     HudConst.C_TEXT_WHITE);
 
-        if (dmgFlashT < 1f) {
-            int flashAlpha = (int)(0xCC * (1f - dmgFlashT) * (1f - dmgFlashT));
+        if (dmgFlashT < 1f && dmgIntensity > 0f) {
+            int flashAlpha = (int)(0xCC * dmgIntensity * (1f - dmgFlashT) * (1f - dmgFlashT));
             gfx.fill(hotbarLeft, rowTop, hotbarLeft + hotbarWidth, rowTop + rowHeight,
                      (flashAlpha << 24) | 0xFF4444);
-        } else if (healFlashT < 1f) {
-            int flashAlpha = (int)(0xAA * (1f - healFlashT) * (1f - healFlashT));
+        } else if (healFlashT < 1f && healIntensity > 0f) {
+            int flashAlpha = (int)(0xAA * healIntensity * (1f - healFlashT) * (1f - healFlashT));
             gfx.fill(hotbarLeft, rowTop, hotbarLeft + hotbarWidth, rowTop + rowHeight,
                      (flashAlpha << 24) | 0x44FF88);
         }
