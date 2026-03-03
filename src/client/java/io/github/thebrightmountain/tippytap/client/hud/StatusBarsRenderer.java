@@ -11,9 +11,11 @@ public final class StatusBarsRenderer {
     private StatusBarsRenderer() {}
 
     /** Renders the gradient health bar above the hotbar.
-     *  @param dmgFlashT 0.0 = damage just taken (full red flash), 1.0 = no flash */
+     *  @param dmgFlashT  0.0 = damage just taken (full red flash),   1.0 = no flash
+     *  @param healFlashT 0.0 = healing just received (full green flash), 1.0 = no flash */
     public static void renderHealthBar(GuiGraphics gfx, Minecraft client,
-                                        TippytapConfig config, boolean dimmed, float dmgFlashT) {
+                                        TippytapConfig config, boolean dimmed,
+                                        float dmgFlashT, float healFlashT) {
         if (!config.showHealthBar) return;
 
         int screenWidth  = client.getWindow().getGuiScaledWidth();
@@ -48,6 +50,10 @@ public final class StatusBarsRenderer {
             int flashAlpha = (int)(0xCC * (1f - dmgFlashT) * (1f - dmgFlashT));
             gfx.fill(hotbarLeft, rowTop, hotbarLeft + hotbarWidth, rowTop + rowHeight,
                      (flashAlpha << 24) | 0xFF4444);
+        } else if (healFlashT < 1f) {
+            int flashAlpha = (int)(0xAA * (1f - healFlashT) * (1f - healFlashT));
+            gfx.fill(hotbarLeft, rowTop, hotbarLeft + hotbarWidth, rowTop + rowHeight,
+                     (flashAlpha << 24) | 0x44FF88);
         }
 
         if (dimmed) gfx.fill(hotbarLeft, rowTop, hotbarLeft + hotbarWidth, rowTop + rowHeight, HudConst.C_PANEL_DIM);

@@ -57,6 +57,8 @@ public class ClientPacketListenerMixin {
         float delta = client.player.getHealth() - packet.getHealth();
         if (delta > 0.001f) {
             HudRenderer.INSTANCE.onDmgTaken(delta);
+        } else if (delta < -0.001f) {
+            HudRenderer.INSTANCE.onHealReceived(-delta);
         }
     }
 }

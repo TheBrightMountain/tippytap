@@ -61,8 +61,10 @@ public class HudRenderer implements HudElement {
     private volatile long   damageTakenExpiry  = 0;
     private volatile float  damageTaken        = 0f;
     private volatile long   damageTakenStart   = 0;
+    private volatile long   healFlashStart     = 0;
 
-    private static final long DMG_FLASH_NS = 600_000_000L; // 600 ms
+    private static final long DMG_FLASH_NS  = 600_000_000L; // 600 ms
+    private static final long HEAL_FLASH_NS = 600_000_000L;
 
     // =========================================================================
     // Public event API (called from mixins)
@@ -122,6 +124,11 @@ public class HudRenderer implements HudElement {
         damageTakenStart  = now;
     }
 
+    /** Called when the local player's health increases. */
+    public void onHealReceived(float amount) {
+        healFlashStart = System.nanoTime();
+    }
+
     // =========================================================================
     // Render entry point
     // =========================================================================
@@ -141,10 +148,14 @@ public class HudRenderer implements HudElement {
         if (!inDebug || !config.hideInfoPanelInDebug)
             InfoPanelRenderer.render(gfx, client, config, currentFps, tickSpeed, combat, inContainer);
 
-        float dmgFlashT = damageTakenStart > 0
-                ? Math.min(1f, (float)(System.nanoTime() - damageTakenStart) / DMG_FLASH_NS)
+        long nowNs = System.nanoTime();
+        float dmgFlashT  = damageTakenStart > 0
+                ? Math.min(1f, (float)(nowNs - damageTakenStart) / DMG_FLASH_NS)
                 : 1f;
-        StatusBarsRenderer.renderHealthBar(gfx, client, config, inContainer, dmgFlashT);
+        float healFlashT = healFlashStart > 0
+                ? Math.min(1f, (float)(nowNs - healFlashStart) / HEAL_FLASH_NS)
+                : 1f;
+        StatusBarsRenderer.renderHealthBar(gfx, client, config, inContainer, dmgFlashT, healFlashT);
         SecondaryStatsRenderer.render(gfx, client, config, inContainer);
         StatusBarsRenderer.renderLocatorBar(gfx, client, config, delta, inContainer);
         HotbarRenderer.render(gfx, client, config, inContainer);
