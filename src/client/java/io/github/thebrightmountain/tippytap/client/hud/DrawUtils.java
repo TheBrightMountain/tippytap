@@ -87,7 +87,7 @@ public final class DrawUtils {
                 if (alpha <= 0) continue;
 
                 double angle     = (Math.atan2(dy, dx) + halfPi + twoPi) % twoPi / twoPi;
-                int    baseColor = angle <= secondary ? secondaryColor
+                int    baseColor = angle < secondary ? secondaryColor
                                  : angle <= primary   ? primaryColor
                                  :                      HudConst.C_BAR_TRACK;
                 int srcAlpha = (baseColor >>> 24) & 0xFF;
